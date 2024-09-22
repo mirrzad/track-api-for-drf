@@ -1,4 +1,4 @@
-from django.utils import timezone
+from django.utils.timezone import now
 import ast
 import ipaddress
 import traceback
@@ -19,7 +19,7 @@ class BaseLoggingMixin:
         super().__init__(*args, **kwargs)
 
     def initial(self, request, *args, **kwargs):
-        self.log = {'requested_at': timezone.now()}
+        self.log = {'requested_at': now()}
         if not getattr(self, 'decode_request_body', app_settings.decode_request_body):
             self.log['data'] = ''
         else:
@@ -52,7 +52,7 @@ class BaseLoggingMixin:
                 'host': request.get_host(),
                 'method': request.method,
                 'user': user,
-                'username_persistent': user.get_username if user else 'Anonymous',
+                'username_persistent': user.get_username() if user else 'Anonymous',
                 'response_ms': self._get_response_ms(),
                 'status_code': response.status_code,
                 'query_params': self._clean_data(request.query_params.dict()),
@@ -92,7 +92,8 @@ class BaseLoggingMixin:
 
     def _get_view_method(self, request):
         if hasattr(self, 'action'):
-            return self.action or None
+            if self.action:
+                return self.action
         return request.method.lower()
 
     def _get_path(self, request):
@@ -105,7 +106,7 @@ class BaseLoggingMixin:
         return user
 
     def _get_response_ms(self):
-        response_timedelta = timezone.now() - self.log['requested_at']
+        response_timedelta = now() - self.log['requested_at']
         response_ms = int(response_timedelta.total_seconds() * 1000)
         return max(response_ms, 0)
 
